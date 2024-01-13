@@ -82,7 +82,7 @@ impl Output {
 
 	pub fn options(&self) -> OptionIter {
 		let ptr = (unsafe { *self.as_ptr() }).priv_class;
-		OptionIter::new(ptr)
+		OptionIter::new(ptr, sys::AV_OPT_FLAG_ENCODING_PARAM)
 	}
 }
 

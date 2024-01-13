@@ -7,7 +7,7 @@ use std::{
 	ptr,
 };
 
-use libc::c_void;
+use libc::{c_int, c_void};
 
 use self::iter::AVOptionIterator;
 pub use self::traits::{Gettable, Iterable, Settable, Target};
@@ -127,11 +127,12 @@ impl OptionConstant {
 pub struct Option {
 	class: *const AVClass,
 	option: *const AVOption,
+	flags: c_int,
 }
 
 impl Option {
-	pub fn new(class: *const AVClass, option: *const AVOption) -> Self {
-		Self { class, option }
+	pub fn new(class: *const AVClass, option: *const AVOption, flags: c_int) -> Self {
+		Self { class, option, flags }
 	}
 }
 
@@ -161,12 +162,12 @@ impl Option {
 	}
 
 	pub fn constants(&self) -> impl Iterator<Item = OptionConstant> + '_ {
-		AVOptionIterator::from_option(self.class, self.option)
+		AVOptionIterator::from_option(self.class, self.option, self.flags)
 			.take_while(|option| {
 				let option = *option;
 				(unsafe { *option }).type_ == AV_OPT_TYPE_CONST
 			})
-			.map(|option| OptionConstant(Option::new(self.class, option)))
+			.map(|option| OptionConstant(Option::new(self.class, option, self.flags)))
 	}
 
 	pub fn default_value(&self) -> OptionType {
@@ -211,9 +212,9 @@ pub struct OptionIter {
 }
 
 impl OptionIter {
-	pub fn new(class: *const AVClass) -> Self {
+	pub fn new(class: *const AVClass, flags: c_int) -> Self {
 		Self {
-			inner: AVOptionIterator::new(class),
+			inner: AVOptionIterator::new(class, flags),
 		}
 	}
 }
@@ -231,7 +232,7 @@ impl Iterator for OptionIter {
 				continue;
 			}
 
-			return Some(Option::new(self.inner.class(), next));
+			return Some(Option::new(self.inner.class(), next, self.inner.flags));
 		}
 	}
 }

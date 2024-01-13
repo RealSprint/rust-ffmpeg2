@@ -101,7 +101,12 @@ impl Codec {
 
 	pub fn options(&self) -> OptionIter {
 		let ptr = (unsafe { *self.as_ptr() }).priv_class;
-		OptionIter::new(ptr)
+		let flags = if self.is_encoder() {
+			sys::AV_OPT_FLAG_ENCODING_PARAM
+		} else {
+			sys::AV_OPT_FLAG_DECODING_PARAM
+		};
+		OptionIter::new(ptr, flags)
 	}
 }
 
