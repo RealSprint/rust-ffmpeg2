@@ -1,6 +1,6 @@
 use std::{any::Any, ptr, rc::Rc};
 
-use libc::c_int;
+use libc::{c_int, c_void};
 
 #[cfg(feature = "ffmpeg_3_1")]
 use super::Parameters;
@@ -150,7 +150,7 @@ impl Context {
 	}
 
 	pub fn option(&self, option: &crate::option::Option) -> Option<OptionType> {
-		unsafe { get_option((*self.as_ptr()).priv_data, option) }
+		unsafe { get_option(self.as_ptr() as *mut c_void, option) }
 	}
 }
 

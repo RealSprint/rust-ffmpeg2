@@ -1,6 +1,6 @@
 use std::{fmt, mem, ptr, rc::Rc};
 
-use libc::{c_int, c_uint};
+use libc::{c_int, c_uint, c_void};
 
 use super::destructor::{self, Destructor};
 use crate::{
@@ -135,7 +135,7 @@ impl Context {
 	}
 
 	pub fn option(&self, option: &crate::option::Option) -> Option<OptionType> {
-		unsafe { get_option((*self.as_ptr()).priv_data, option) }
+		unsafe { get_option(self.as_ptr() as *mut c_void, option) }
 	}
 }
 
