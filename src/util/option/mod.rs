@@ -125,14 +125,14 @@ impl OptionConstant {
 }
 
 pub struct Option {
-	class: *const AVClass,
+	obj: *const std::ffi::c_void,
 	option: *const AVOption,
 	flags: c_int,
 }
 
 impl Option {
-	pub fn new(class: *const AVClass, option: *const AVOption, flags: c_int) -> Self {
-		Self { class, option, flags }
+	pub fn new(obj: *const std::ffi::c_void, option: *const AVOption, flags: c_int) -> Self {
+		Self { obj, option, flags }
 	}
 }
 
@@ -162,12 +162,12 @@ impl Option {
 	}
 
 	pub fn constants(&self) -> impl Iterator<Item = OptionConstant> + '_ {
-		AVOptionIterator::from_option(self.class, self.option, self.flags)
+		AVOptionIterator::from_option(self.obj, self.option, self.flags)
 			.take_while(|option| {
 				let option = *option;
 				(unsafe { *option }).type_ == AV_OPT_TYPE_CONST
 			})
-			.map(|option| OptionConstant(Option::new(self.class, option, self.flags)))
+			.map(|option| OptionConstant(Option::new(self.obj, option, self.flags)))
 	}
 
 	pub fn default_value(&self) -> OptionType {
@@ -212,9 +212,9 @@ pub struct OptionIter {
 }
 
 impl OptionIter {
-	pub fn new(class: *const AVClass, flags: c_int) -> Self {
+	pub fn new(obj: *const std::ffi::c_void, flags: c_int) -> Self {
 		Self {
-			inner: AVOptionIterator::new(class, flags),
+			inner: AVOptionIterator::new(obj, flags),
 		}
 	}
 }
@@ -243,7 +243,7 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 	match option.kind() {
 		Type::Flags | Type::Int | Type::Int64 | Type::Constant | Type::Duration | Type::ChannelLayout | Type::c_ulong => {
 			let mut value = 0;
-			let res = unsafe { av_opt_get_int(ptr, name.as_ptr(), 0, &mut value) };
+			let res = unsafe { av_opt_get_int(ptr, name.as_ptr(), sys::AV_OPT_SEARCH_CHILDREN, &mut value) };
 
 			if res < 0 {
 				return None;
@@ -254,7 +254,7 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 
 		Type::Double | Type::Float => {
 			let mut value = 0.0;
-			let res = unsafe { av_opt_get_double(ptr, name.as_ptr(), 0, &mut value) };
+			let res = unsafe { av_opt_get_double(ptr, name.as_ptr(), sys::AV_OPT_SEARCH_CHILDREN, &mut value) };
 
 			if res < 0 {
 				return None;
@@ -264,7 +264,7 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 		}
 		Type::String | Type::Binary | Type::ImageSize | Type::Dictionary | Type::Color | Type::VideoRate => {
 			let mut value = ptr::null_mut();
-			let res = unsafe { av_opt_get(ptr, name.as_ptr(), 0, &mut value) };
+			let res = unsafe { av_opt_get(ptr, name.as_ptr(), sys::AV_OPT_SEARCH_CHILDREN, &mut value) };
 
 			if res < 0 {
 				return None;
@@ -280,7 +280,7 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 		}
 		Type::Rational => {
 			let mut value = AVRational { num: 0, den: 1 };
-			let res = unsafe { av_opt_get_q(ptr, name.as_ptr(), 0, &mut value) };
+			let res = unsafe { av_opt_get_q(ptr, name.as_ptr(), sys::AV_OPT_SEARCH_CHILDREN, &mut value) };
 
 			if res < 0 {
 				return None;
@@ -291,7 +291,7 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 
 		Type::PixelFormat => {
 			let mut value = AVPixelFormat::AV_PIX_FMT_NONE;
-			let res = unsafe { av_opt_get_pixel_fmt(ptr, name.as_ptr(), 0, &mut value) };
+			let res = unsafe { av_opt_get_pixel_fmt(ptr, name.as_ptr(), sys::AV_OPT_SEARCH_CHILDREN, &mut value) };
 
 			if res < 0 {
 				return None;
@@ -301,7 +301,7 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 		}
 		Type::SampleFormat => {
 			let mut value = AVSampleFormat::AV_SAMPLE_FMT_NONE;
-			let res = unsafe { av_opt_get_sample_fmt(ptr, name.as_ptr(), 0, &mut value) };
+			let res = unsafe { av_opt_get_sample_fmt(ptr, name.as_ptr(), sys::AV_OPT_SEARCH_CHILDREN, &mut value) };
 
 			if res < 0 {
 				return None;
@@ -312,7 +312,7 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 
 		Type::bool => {
 			let mut value = 0;
-			let res = unsafe { av_opt_get_int(ptr, name.as_ptr(), 0, &mut value) };
+			let res = unsafe { av_opt_get_int(ptr, name.as_ptr(), sys::AV_OPT_SEARCH_CHILDREN, &mut value) };
 
 			if res < 0 {
 				return None;

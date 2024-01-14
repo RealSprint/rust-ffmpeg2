@@ -3,30 +3,30 @@ use std::ffi::c_int;
 use sys::{av_opt_next, AVClass, AVOption};
 
 pub struct AVOptionIterator {
-	av_class: *const AVClass,
+	obj: *const std::ffi::c_void,
 	option: *const AVOption,
 	pub(crate) flags: c_int,
 }
 
 impl AVOptionIterator {
-	pub fn new(av_class: *const AVClass, flags: c_int) -> Self {
+	pub fn new(av_class: *const std::ffi::c_void, flags: c_int) -> Self {
 		Self {
-			av_class,
+			obj: av_class,
 			option: std::ptr::null(),
 			flags,
 		}
 	}
 
-	pub fn from_option(av_class: *const AVClass, option: *const AVOption, flags: c_int) -> Self {
+	pub fn from_option(av_class: *const std::ffi::c_void, option: *const AVOption, flags: c_int) -> Self {
 		Self {
-			av_class,
+			obj: av_class,
 			option,
 			flags,
 		}
 	}
 
-	pub fn class(&self) -> *const AVClass {
-		self.av_class
+	pub fn class(&self) -> *const std::ffi::c_void {
+		self.obj
 	}
 }
 
@@ -35,7 +35,7 @@ impl Iterator for AVOptionIterator {
 
 	fn next(&mut self) -> std::option::Option<<Self as Iterator>::Item> {
 		unsafe {
-			let priv_class = &self.av_class as *const *const AVClass;
+			let priv_class = &self.obj as *const *const std::ffi::c_void;
 			let mut ptr = av_opt_next(priv_class as *const std::ffi::c_void, self.option);
 
 			// Skip while the flags aren't set and we haven't reached the end
