@@ -1,5 +1,7 @@
 use std::{ffi::CStr, str::from_utf8_unchecked};
 
+use libc::c_void;
+
 use super::{Audio, Capabilities, Id, Profile, Video};
 use crate::{ffi::*, media, option::OptionIter, Error};
 
@@ -100,8 +102,13 @@ impl Codec {
 	}
 
 	pub fn options(&self) -> OptionIter {
-		let ptr = (unsafe { *self.as_ptr() }).priv_class;
-		OptionIter::new(ptr)
+		let ptr = unsafe { (*self.as_ptr()).priv_class as *const c_void };
+		let flags = if self.is_encoder() {
+			sys::AV_OPT_FLAG_ENCODING_PARAM
+		} else {
+			sys::AV_OPT_FLAG_DECODING_PARAM
+		};
+		OptionIter::new(ptr, flags)
 	}
 }
 

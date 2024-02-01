@@ -56,8 +56,8 @@ impl Input {
 	}
 
 	pub fn options(&self) -> OptionIter {
-		let ptr = (unsafe { *self.as_ptr() }).priv_class;
-		OptionIter::new(ptr)
+		let ptr = (unsafe { *self.as_ptr() }).priv_class as *const std::ffi::c_void;
+		OptionIter::new(ptr, sys::AV_OPT_FLAG_DECODING_PARAM)
 	}
 }
 
