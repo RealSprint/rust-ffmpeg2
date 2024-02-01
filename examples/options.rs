@@ -16,8 +16,13 @@ fn main() {
 				option.default_value(),
 				option.help()
 			);
-			option.constants().for_each(|asdf| {
-				println!(" {}({:?}) - {:?}", asdf.name(), asdf.default_value(), asdf.help());
+			option.constants().for_each(|constant| {
+				println!(
+					" {}({:?}) - {:?}",
+					constant.name(),
+					constant.default_value(),
+					constant.help()
+				);
 			})
 		});
 	});
@@ -32,8 +37,13 @@ fn main() {
 				option.default_value(),
 				option.help()
 			);
-			option.constants().for_each(|asdf| {
-				println!(" {}({:?}) - {:?}", asdf.name(), asdf.default_value(), asdf.help());
+			option.constants().for_each(|constant| {
+				println!(
+					" {}({:?}) - {:?}",
+					constant.name(),
+					constant.default_value(),
+					constant.help()
+				);
 			})
 		});
 	});
