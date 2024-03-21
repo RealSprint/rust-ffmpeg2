@@ -609,8 +609,6 @@ impl From<AVPixelFormat> for Pixel {
 			AV_PIX_FMT_P016LE => Pixel::P016LE,
 			AV_PIX_FMT_P016BE => Pixel::P016BE,
 
-			AV_PIX_FMT_NB => Pixel::None,
-
 			#[cfg(feature = "ffmpeg_3_3")]
 			AV_PIX_FMT_D3D11 => Pixel::D3D11,
 			AV_PIX_FMT_GRAY9BE => Pixel::GRAY9BE,
