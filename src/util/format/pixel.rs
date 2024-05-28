@@ -952,6 +952,9 @@ impl From<Pixel> for AVPixelFormat {
 impl Display for Pixel {
 	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
 		let name = unsafe { av_get_pix_fmt_name((*self).into()) };
+		if name.is_null() {
+			return write!(f, "unknown");
+		}
 		let name = unsafe { from_utf8_unchecked(CStr::from_ptr(name).to_bytes()) };
 		write!(f, "{}", name)
 	}
