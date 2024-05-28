@@ -316,7 +316,7 @@ impl ChannelLayout {
 	}
 
 	pub fn custom_channels(&self) -> Option<&[CustomChannel]> {
-		(self.0.order == AVChannelOrder::AV_CHANNEL_ORDER_CUSTOM).then_some(unsafe { self.custom_channels_unchecked() })
+		(self.0.order == AVChannelOrder::AV_CHANNEL_ORDER_CUSTOM).then(|| unsafe { self.custom_channels_unchecked() })
 	}
 
 	pub fn is_valid(&self) -> bool {
