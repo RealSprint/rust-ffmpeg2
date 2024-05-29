@@ -20,10 +20,7 @@ impl Destructor {
 impl Drop for Destructor {
 	fn drop(&mut self) {
 		unsafe {
-			if !(*self.ptr).interrupt_callback.opaque.is_null() {
-				let closure: Box<Box<dyn FnMut() -> bool>> = Box::from_raw((*self.ptr).interrupt_callback.opaque as *mut _);
-				drop(closure);
-			}
+			let opaque = (*self.ptr).interrupt_callback.opaque;
 
 			match self.mode {
 				Mode::Input => avformat_close_input(&mut self.ptr),
@@ -40,6 +37,11 @@ impl Drop for Destructor {
 
 					avformat_free_context(self.ptr);
 				}
+			}
+
+			if !opaque.is_null() {
+				let closure: Box<Box<dyn FnMut() -> bool>> = Box::from_raw(opaque as *mut _);
+				drop(closure);
 			}
 		}
 	}
