@@ -1,10 +1,13 @@
-use std::{env, fs::File, io::prelude::*};
+use core::num;
+use std::{collections::HashSet, env, fs::File, io::prelude::*};
 
+use bytes::{Buf, Bytes};
 use ffmpeg::{
 	format::{input, Pixel},
 	media::Type,
 	software::scaling::{context::Context, flag::Flags},
 	util::frame::video::Video,
+	Rational, Rescale,
 };
 
 fn main() -> Result<(), ffmpeg::Error> {
@@ -14,40 +17,43 @@ fn main() -> Result<(), ffmpeg::Error> {
 		let input = ictx.streams().best(Type::Video).ok_or(ffmpeg::Error::StreamNotFound)?;
 		let video_stream_index = input.index();
 
-		let mut decoder = input.decoder()?.video()?;
-
-		let mut scaler = Context::get(
-			decoder.format(),
-			decoder.width(),
-			decoder.height(),
-			Pixel::RGB24,
-			decoder.width(),
-			decoder.height(),
-			Flags::BILINEAR,
-		)?;
-
-		let mut frame_index = 0;
-
-		let mut receive_and_process_decoded_frames = |decoder: &mut ffmpeg::decoder::Video| -> Result<(), ffmpeg::Error> {
-			let mut decoded = Video::empty();
-			while decoder.receive_frame(&mut decoded).is_ok() {
-				let mut rgb_frame = Video::empty();
-				scaler.run(&decoded, &mut rgb_frame)?;
-				save_file(&rgb_frame, frame_index).unwrap();
-				frame_index += 1;
-			}
-			Ok(())
-		};
-
-		for res in ictx.packets() {
+		for (index, res) in ictx.packets().enumerate() {
 			let (stream, packet) = res?;
-			if stream.index() == video_stream_index {
-				decoder.send_packet(&packet)?;
-				receive_and_process_decoded_frames(&mut decoder)?;
+
+			if stream.id() == 0x13c {
+				let mut bytes = Bytes::copy_from_slice(packet.data().unwrap());
+
+				bytes.get_u8();
+				bytes.get_u8();
+				bytes.get_u8();
+				bytes.get_u8();
+				bytes.get_u8();
+				bytes.get_u8();
+				let num_segments = bytes.get_u8();
+				if num_segments != 0 {
+					for i in 0..num_segments {
+						let segment_type = bytes.get_u8();
+						let segment_length = bytes.get_u16();
+						// println!("{index}: segment_type: {segment_type}, segment_length: {segment_length}",);
+						let mut dest = vec![0; segment_length as usize];
+
+						bytes.copy_to_slice(&mut dest);
+						let dest = std::str::from_utf8(&dest).unwrap();
+
+						if segment_length > 0 {
+							println!(
+								"time: {:?} - data {}",
+								packet
+									.dts()
+									.unwrap_or_default()
+									.rescale(stream.time_base().unwrap(), Rational(1, 1000)),
+								dest
+							);
+						}
+					}
+				}
 			}
 		}
-		decoder.send_eof()?;
-		receive_and_process_decoded_frames(&mut decoder)?;
 	}
 
 	Ok(())
