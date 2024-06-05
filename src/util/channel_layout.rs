@@ -505,14 +505,14 @@ impl CustomChannel {
 		let len = name.len().min(15);
 		name_with_zero[..len].copy_from_slice(&name[..len]);
 
-		Self::custom(channel as i32, array::from_fn(|i| name_with_zero[i] as i8))
+		Self::custom(channel, array::from_fn(|i| name_with_zero[i] as libc::c_char))
 	}
 
-	pub fn custom(channel: i32, name: [i8; 16]) -> Self {
+	pub fn custom(channel: i32, name: [libc::c_char; 16]) -> Self {
 		assert_eq!(name[15], 0);
 
 		Self(AVChannelCustom {
-			id: AVChannel(channel as i32),
+			id: AVChannel(channel),
 			name,
 			opaque: ptr::null_mut(),
 		})
