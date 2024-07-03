@@ -5,12 +5,12 @@ use vsprintf::vsprintf;
 use crate::ffi::*;
 
 #[cfg(target_os = "macos")]
-unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, args: va_list) {
+unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, mut args: *mut __va_list_tag) {
 	if av_log_get_level() <= level {
 		return;
 	};
 
-	let string = vsprintf(fmt, args).unwrap();
+	let string = vsprintf(fmt, args.as_mut_ptr()).unwrap();
 	let string = string.trim();
 
 	match level {
@@ -24,12 +24,12 @@ unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_cha
 }
 
 #[cfg(not(target_os = "macos"))]
-unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, args: *mut __va_list_tag) {
+unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, mut args: va_list) {
 	if av_log_get_level() <= level {
 		return;
 	};
 
-	let string = vsprintf(fmt, args).unwrap();
+	let string = vsprintf(fmt, args.as_mut_ptr()).unwrap();
 	let string = string.trim();
 
 	match level {

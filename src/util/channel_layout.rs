@@ -493,32 +493,28 @@ impl FromStr for ChannelLayout {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 pub struct CustomChannel(AVChannelCustom);
-
 impl CustomChannel {
 	pub fn new(channel: Channel, name: Option<&str>) -> Self {
 		Self::new_raw(channel as i32, name)
 	}
-
 	pub fn new_raw(channel: i32, name: Option<&str>) -> Self {
 		let name = name.unwrap_or("").as_bytes();
 		let mut name_with_zero = [0; 16];
 		let len = name.len().min(15);
 		name_with_zero[..len].copy_from_slice(&name[..len]);
-
-		Self::custom(channel, array::from_fn(|i| name_with_zero[i] as libc::c_char))
+		let name_with_zero_u8: [u8; 16] = unsafe { std::mem::transmute(name_with_zero) };
+		Self::custom(channel as i32, name_with_zero_u8)
 	}
-
-	pub fn custom(channel: i32, name: [libc::c_char; 16]) -> Self {
+	pub fn custom(channel: i32, name: [u8; 16]) -> Self {
 		assert_eq!(name[15], 0);
-
 		Self(AVChannelCustom {
-			id: AVChannel(channel),
-			name,
+			id: AVChannel(channel as i32),
+			name: unsafe { std::mem::transmute(name) },
 			opaque: ptr::null_mut(),
 		})
 	}
 }
-
+	
 impl From<Channel> for CustomChannel {
 	fn from(v: Channel) -> CustomChannel {
 		CustomChannel::new(v, None)
