@@ -4,32 +4,28 @@ use vsprintf::vsprintf;
 
 use crate::ffi::*;
 
-#[cfg(target_os = "macos")]
-unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, args: va_list) {
+unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char, mut args: va_list) {
 	if av_log_get_level() <= level {
 		return;
 	};
 
-	let string = vsprintf(fmt, args).unwrap();
-	let string = string.trim();
+	let mut line: &mut [u8] = &mut [0; 1024];
+	let mut print_prefix = 1;
 
-	match level {
-		AV_LOG_PANIC | AV_LOG_FATAL | AV_LOG_ERROR => tracing::error!("{string}"),
-		AV_LOG_WARNING => tracing::warn!("{string}"),
-		AV_LOG_INFO => tracing::info!("{string}"),
-		AV_LOG_VERBOSE | AV_LOG_DEBUG => tracing::debug!("{string}"),
-		AV_LOG_TRACE => tracing::trace!("{string}"),
-		_ => {}
-	};
-}
+	ffmpeg_sys::av_log_format_line(
+		ptr,
+		level,
+		fmt,
+		args,
+		line.as_mut_ptr() as *mut c_char,
+		line.len() as i32,
+		&mut print_prefix,
+	);
 
-#[cfg(not(target_os = "macos"))]
-unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, args: *mut __va_list_tag) {
-	if av_log_get_level() <= level {
+	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
 		return;
 	};
 
-	let string = vsprintf(fmt, args).unwrap();
 	let string = string.trim();
 
 	match level {
@@ -43,6 +39,7 @@ unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_cha
 }
 
 pub fn register() {
+	let asdf: va_list;
 	unsafe {
 		av_log_set_callback(Some(callback));
 	}
