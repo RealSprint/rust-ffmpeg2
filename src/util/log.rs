@@ -10,7 +10,20 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 		return;
 	};
 
-	let Ok(string) = vsprintf(fmt, args) else {
+	let mut line: &mut [u8] = &mut [0; 1024];
+	let mut print_prefix = 0;
+
+	ffmpeg_sys::av_log_format_line(
+		ptr,
+		level,
+		fmt,
+		args,
+		line.as_mut_ptr() as *mut c_char,
+		line.len() as i32,
+		&mut print_prefix,
+	);
+
+	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
 		return;
 	};
 
@@ -32,7 +45,20 @@ unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_cha
 		return;
 	};
 
-	let Ok(string) = vsprintf(fmt, args) else {
+	let mut line: &mut [u8] = &mut [0; 1024];
+	let mut print_prefix = 0;
+
+	ffmpeg_sys::av_log_format_line(
+		ptr,
+		level,
+		fmt,
+		args,
+		line.as_mut_ptr() as *mut c_char,
+		line.len() as i32,
+		&mut print_prefix,
+	);
+
+	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
 		return;
 	};
 
