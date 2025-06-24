@@ -19,11 +19,13 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 		fmt,
 		args,
 		line.as_mut_ptr() as *mut c_char,
-		line.len() as i32,
+		line.len() as c_int,
 		&mut print_prefix,
 	);
 
 	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
+		let string = std::str::from_utf8(line.as_ref()).unwrap_or_default();
+		tracing::warn!("invalid log line: {}", string);
 		return;
 	};
 
@@ -54,11 +56,13 @@ unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_cha
 		fmt,
 		args,
 		line.as_mut_ptr() as *mut c_char,
-		line.len() as i32,
+		line.len() as c_int,
 		&mut print_prefix,
 	);
 
 	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
+		let string = std::str::from_utf8(line.as_ref()).unwrap_or_default();
+		tracing::warn!("invalid log line: {}", string);
 		return;
 	};
 
