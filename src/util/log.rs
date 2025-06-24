@@ -44,7 +44,7 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 }
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, args: *mut __va_list_tag) {
+unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char, args: *mut __va_list_tag) {
 	if av_log_get_level() <= level {
 		return;
 	};
