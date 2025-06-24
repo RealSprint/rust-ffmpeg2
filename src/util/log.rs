@@ -4,13 +4,16 @@ use vsprintf::vsprintf;
 
 use crate::ffi::*;
 
-#[cfg(target_os = "macos")]
-unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, args: va_list) {
+#[cfg(any(target_os = "macos", target_arch = "aarch64"))]
+unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char, args: va_list) {
 	if av_log_get_level() <= level {
 		return;
 	};
 
-	let string = vsprintf(fmt, args).unwrap();
+	let Ok(string) = vsprintf(fmt, args) else {
+		return;
+	};
+
 	let string = string.trim();
 
 	match level {
@@ -23,13 +26,16 @@ unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_cha
 	};
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_char, args: *mut __va_list_tag) {
 	if av_log_get_level() <= level {
 		return;
 	};
 
-	let string = vsprintf(fmt, args).unwrap();
+	let Ok(string) = vsprintf(fmt, args) else {
+		return;
+	};
+
 	let string = string.trim();
 
 	match level {
