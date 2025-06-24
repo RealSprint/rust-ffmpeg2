@@ -1,4 +1,5 @@
 use libc::{c_char, c_int, c_void};
+use std::ffi::CStr;
 
 use vsprintf::vsprintf;
 
@@ -24,7 +25,8 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 	);
 
 	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
-		let string = std::str::from_utf8(line.as_ref()).unwrap_or_default();
+		let slice = CStr::from_ptr(fmt);
+		let string = slice.to_str().unwrap_or_default();
 		tracing::warn!("invalid log line: {}", string);
 		return;
 	};
@@ -61,7 +63,8 @@ unsafe extern "C" fn callback(_ptr: *mut c_void, level: c_int, fmt: *const c_cha
 	);
 
 	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
-		let string = std::str::from_utf8(line.as_ref()).unwrap_or_default();
+		let slice = CStr::from_ptr(fmt);
+		let string = slice.to_str().unwrap_or_default();
 		tracing::warn!("invalid log line: {}", string);
 		return;
 	};
