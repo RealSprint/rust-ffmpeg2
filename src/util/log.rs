@@ -14,7 +14,7 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 	let mut line: &mut [u8] = &mut [0; 1024];
 	let mut print_prefix = 0;
 
-	ffmpeg_sys::av_log_format_line(
+	let result = ffmpeg_sys::av_log_format_line2(
 		ptr,
 		level,
 		fmt,
@@ -24,7 +24,9 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 		&mut print_prefix,
 	);
 
-	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
+	let line_length = (line.len() - 1).min(result as usize);
+
+	let Ok(string) = std::str::from_utf8(&line[..line_length]) else {
 		let string = CStr::from_ptr(fmt);
 		let string = string.to_str().unwrap_or_default();
 		tracing::warn!("invalid log line: {}", string);
@@ -52,7 +54,7 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 	let mut line: &mut [u8] = &mut [0; 1024];
 	let mut print_prefix = 0;
 
-	ffmpeg_sys::av_log_format_line(
+	let result = ffmpeg_sys::av_log_format_line2(
 		ptr,
 		level,
 		fmt,
@@ -62,7 +64,9 @@ unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char
 		&mut print_prefix,
 	);
 
-	let Ok(string) = std::str::from_utf8(line.as_ref()) else {
+	let line_length = (line.len() - 1).min(result as usize);
+
+	let Ok(string) = std::str::from_utf8(&line[..line_length]) else {
 		let string = CStr::from_ptr(fmt);
 		let string = string.to_str().unwrap_or_default();
 		tracing::warn!("invalid log line: {}", string);
