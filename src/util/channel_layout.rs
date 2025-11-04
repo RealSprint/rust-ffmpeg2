@@ -58,14 +58,14 @@ pub enum Channel {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-#[repr(u32)]
+#[repr(i32)]
 #[cfg_attr(feature = "serde", derive(serde_derive::Serialize, serde_derive::Deserialize))]
 #[cfg_attr(feature = "serde", serde(crate = "serde_", rename_all = "kebab-case"))]
 pub enum ChannelOrder {
-	Unspecified = AVChannelOrder::AV_CHANNEL_ORDER_UNSPEC.0,
-	Native = AVChannelOrder::AV_CHANNEL_ORDER_NATIVE.0,
-	Custom = AVChannelOrder::AV_CHANNEL_ORDER_CUSTOM.0,
-	Ambisonic = AVChannelOrder::AV_CHANNEL_ORDER_AMBISONIC.0,
+	Unspecified = AVChannelOrder::AV_CHANNEL_ORDER_UNSPEC.0 as i32,
+	Native = AVChannelOrder::AV_CHANNEL_ORDER_NATIVE.0 as i32,
+	Custom = AVChannelOrder::AV_CHANNEL_ORDER_CUSTOM.0 as i32,
+	Ambisonic = AVChannelOrder::AV_CHANNEL_ORDER_AMBISONIC.0 as i32,
 }
 
 pub struct ChannelLayout(AVChannelLayout);
@@ -292,7 +292,7 @@ impl ChannelLayout {
 	}
 
 	pub fn set_order(&mut self, order: ChannelOrder) {
-		self.0.order = AVChannelOrder(order as u32);
+		self.0.order = AVChannelOrder(order as libc::c_int);
 	}
 
 	pub fn channels(&self) -> i32 {
@@ -641,7 +641,7 @@ mod serde {
 
 			// provide type hints in order to get compile-time errors if ffmpeg
 			// changes the struct definition
-			s.serialize_field::<u32>("order", &self.0.order.0)?;
+			s.serialize_field::<libc::c_int>("order", &self.0.order.0)?;
 
 			if let Some(custom) = self.custom_channels() {
 				s.serialize_field("map", &custom)?;
@@ -667,7 +667,7 @@ mod serde {
 			#[derive(Deserialize)]
 			#[serde(crate = "serde_")]
 			struct NewLayout {
-				order: u32,
+				order: libc::c_int,
 
 				mask: Option<u64>,
 				map: Option<Vec<CustomChannel>>,
