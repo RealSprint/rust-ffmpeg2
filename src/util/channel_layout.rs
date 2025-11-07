@@ -709,10 +709,9 @@ mod serde {
 					order: num_order,
 					mask,
 					map,
-				}) => {	
+				}) => {
 					order = AVChannelOrder(num_order);
 					
-
 					match (order, mask, map) {
 						(AVChannelOrder::AV_CHANNEL_ORDER_CUSTOM, _, Some(map)) => {
 							u = ChannelData {
