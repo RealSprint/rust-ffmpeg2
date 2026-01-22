@@ -223,20 +223,14 @@ pub fn input(io: impl Read + Seek + 'static) -> Result<context::Input, Error> {
 }
 
 pub fn stream(io: impl Read + 'static) -> Result<context::Input, Error> {
-	unsafe {
-		let mut ps = avformat_alloc_context();
-		let mut io = Io::stream(io);
-		(*ps).flags |= AVFMT_FLAG_CUSTOM_IO;
-		(*ps).pb = io.as_mut_ptr();
-
-		match avformat_open_input(&mut ps, ptr::null_mut(), ptr::null_mut(), ptr::null_mut()) {
-			0 => Ok(context::Input::wrap_with(ps, io)),
-			e => Err(Error::from(e)),
-		}
-	}
+	open_stream(io, Dictionary::new())
 }
 
 pub fn stream_with_opts(io: impl Read + 'static, dictionary: Dictionary) -> Result<context::Input, Error> {
+	open_stream(io, dictionary)
+}
+
+fn open_stream(io: impl Read + 'static, dictionary: Dictionary) -> Result<context::Input, Error> {
 	unsafe {
 		let mut ps = avformat_alloc_context();
 		let mut io = Io::stream(io);
