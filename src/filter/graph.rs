@@ -185,9 +185,12 @@ impl<'a> Parser<'a> {
 
 			if self.outputs.is_null() {
 				self.outputs = output;
-			}
-			else {
-				(*self.outputs).next = output;
+			} else {
+				let mut tail = self.outputs;
+				while !(*tail).next.is_null() {
+					tail = (*tail).next;
+				}
+				(*tail).next = output;
 			}
 		}
 
