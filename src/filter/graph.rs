@@ -115,6 +115,30 @@ impl Graph {
 	pub fn parse(&mut self, spec: &str) -> Result<(), Error> {
 		Parser::new(self).parse(spec)
 	}
+
+	pub unsafe fn send_command(&mut self, cmd: &str, arg: &str, target: &str) -> Result<(), Error> {
+		unsafe {
+			use std::ffi::CString;
+			let target = CString::new(target).unwrap();
+			let cmd = CString::new(cmd).unwrap();
+			let arg = CString::new(arg).unwrap();
+
+			let result = avfilter_graph_send_command(
+				self.ptr,
+				target.as_ptr(),
+				cmd.as_ptr(),
+				arg.as_ptr(),
+				std::ptr::null_mut(),
+				0,
+				0,
+			);
+
+			match result {
+				n if n >= 0 => Ok(()),
+				e => Err(Error::from(e)),
+			}
+		}
+	}
 }
 
 impl Drop for Graph {
