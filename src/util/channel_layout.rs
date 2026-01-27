@@ -14,6 +14,11 @@ use crate::{
 	Error,
 };
 
+#[cfg(target_os = "windows")]
+type ChannelOrderInner = libc::c_int;
+#[cfg(not(target_os = "windows"))]
+type ChannelOrderInner = libc::c_uint;
+
 // new channel layout since 5.1
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -292,14 +297,7 @@ impl ChannelLayout {
 	}
 
 	pub fn set_order(&mut self, order: ChannelOrder) {
-		#[cfg(target_os = "windows")]
-		{
-			self.0.order = AVChannelOrder(order as libc::c_int);
-		}
-		#[cfg(not(target_os = "windows"))]
-		{
-			self.0.order = AVChannelOrder(order as libc::c_uint);
-		}
+		self.0.order = AVChannelOrder(order as ChannelOrderInner);
 	}
 
 	pub fn channels(&self) -> i32 {
@@ -648,14 +646,7 @@ mod serde {
 
 			// provide type hints in order to get compile-time errors if ffmpeg
 			// changes the struct definition
-			#[cfg(target_os = "windows")]
-			{
-				s.serialize_field::<libc::c_int>("order", &self.0.order.0)?;
-			}
-			#[cfg(not(target_os = "windows"))]
-			{
-				s.serialize_field::<libc::c_uint>("order", &self.0.order.0)?;
-			}
+			s.serialize_field::<super::ChannelOrderInner>("order", &self.0.order.0)?;
 
 			if let Some(custom) = self.custom_channels() {
 				s.serialize_field("map", &custom)?;
@@ -681,10 +672,7 @@ mod serde {
 			#[derive(Deserialize)]
 			#[serde(crate = "serde_")]
 			struct NewLayout {
-				#[cfg(target_os = "windows")]
-				order: libc::c_int,
-				#[cfg(not(target_os = "windows"))]
-				order: libc::c_uint,
+				order: super::ChannelOrderInner,
 
 				mask: Option<u64>,
 				map: Option<Vec<CustomChannel>>,
