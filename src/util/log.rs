@@ -4,8 +4,9 @@ use std::ffi::CStr;
 use vsprintf::vsprintf;
 
 use crate::ffi::*;
+use crate::sys::va_list;
 
-#[cfg(any(target_os = "macos", target_arch = "aarch64"))]
+#[cfg(any(target_os = "macos", target_os = "windows", target_arch = "aarch64"))]
 unsafe extern "C" fn callback(ptr: *mut c_void, level: c_int, fmt: *const c_char, args: va_list) {
 	if av_log_get_level() <= level {
 		return;
