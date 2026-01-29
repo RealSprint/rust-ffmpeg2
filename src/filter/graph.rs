@@ -57,8 +57,8 @@ impl Graph {
 		'a: 'b,
 	{
 		unsafe {
-			let name = CString::new(name).unwrap();
-			let args = CString::new(args).unwrap();
+			let name = CString::new(name).map_err(|_| Error::InvalidData)?;
+			let args = CString::new(args).map_err(|_| Error::InvalidData)?;
 			let mut context = ptr::null_mut();
 
 			match avfilter_graph_create_filter(
@@ -80,7 +80,7 @@ impl Graph {
 		'a: 'b,
 	{
 		unsafe {
-			let name = CString::new(name).unwrap();
+			let name = CString::new(name).ok()?;
 			let ptr = avfilter_graph_get_filter(self.as_mut_ptr(), name.as_ptr());
 
 			if ptr.is_null() {
@@ -119,9 +119,9 @@ impl Graph {
 	pub unsafe fn send_command(&mut self, cmd: &str, arg: &str, target: &str) -> Result<(), Error> {
 		unsafe {
 			use std::ffi::CString;
-			let target = CString::new(target).unwrap();
-			let cmd = CString::new(cmd).unwrap();
-			let arg = CString::new(arg).unwrap();
+			let target = CString::new(target).map_err(|_| Error::InvalidData)?;
+			let cmd = CString::new(cmd).map_err(|_| Error::InvalidData)?;
+			let arg = CString::new(arg).map_err(|_| Error::InvalidData)?;
 
 			let result = avfilter_graph_send_command(
 				self.ptr,
@@ -173,7 +173,7 @@ impl<'a> Parser<'a> {
 				panic!("out of memory");
 			}
 
-			let name = CString::new(name).unwrap();
+			let name = CString::new(name).map_err(|_| Error::InvalidData)?;
 
 			(*input).name = av_strdup(name.as_ptr());
 			(*input).filter_ctx = context.as_mut_ptr();
@@ -200,7 +200,7 @@ impl<'a> Parser<'a> {
 				panic!("out of memory");
 			}
 
-			let name = CString::new(name).unwrap();
+			let name = CString::new(name).map_err(|_| Error::InvalidData)?;
 
 			(*output).name = av_strdup(name.as_ptr());
 			(*output).filter_ctx = context.as_mut_ptr();
@@ -223,7 +223,7 @@ impl<'a> Parser<'a> {
 
 	pub fn parse(mut self, spec: &str) -> Result<(), Error> {
 		unsafe {
-			let spec = CString::new(spec).unwrap();
+			let spec = CString::new(spec).map_err(|_| Error::InvalidData)?;
 
 			let result = avfilter_graph_parse_ptr(
 				self.graph.as_mut_ptr(),
