@@ -75,16 +75,22 @@ fn as_error(err: io::Error) -> c_int {
 
 unsafe extern "C" fn read_packet(opaque: *mut c_void, buf: *mut u8, size: c_int) -> c_int {
 	let mut proxy = Box::<Proxy>::from_raw(opaque.cast());
-	let buffer = slice::from_raw_parts_mut(buf, size.try_into().unwrap());
+
+	if buf.is_null() || size <= 0 {
+		Box::into_raw(proxy);
+		return AVERROR(EINVAL);
+	}
+
+	let buffer = slice::from_raw_parts_mut(buf, size as usize);
 
 	let result = match proxy.as_read().read(buffer) {
 		Ok(0) => AVERROR_EOF,
-		Ok(size) => size.try_into().unwrap(),
+		Ok(size) => size as c_int,
 		Err(err) => as_error(err),
 	};
 
 	Box::into_raw(proxy);
-	result.try_into().unwrap()
+	result
 }
 
 // copy of unstable `Seek::stream_len`
@@ -130,10 +136,16 @@ unsafe extern "C" fn seek(opaque: *mut c_void, offset: i64, whence: c_int) -> i6
 
 unsafe extern "C" fn write_packet(opaque: *mut c_void, buf: *mut u8, size: c_int) -> c_int {
 	let mut proxy = Box::<Proxy>::from_raw(opaque.cast());
-	let buffer = slice::from_raw_parts(buf, size.try_into().unwrap());
+
+	if buf.is_null() || size <= 0 {
+		Box::into_raw(proxy);
+		return AVERROR(EINVAL);
+	}
+
+	let buffer = slice::from_raw_parts(buf, size as usize);
 
 	let result: c_int = match proxy.as_write().write(buffer) {
-		Ok(size) => size.try_into().unwrap(),
+		Ok(size) => size as c_int,
 		Err(err) => as_error(err),
 	};
 
