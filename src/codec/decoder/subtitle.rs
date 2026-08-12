@@ -12,6 +12,12 @@ impl Subtitle {
 		unsafe {
 			let mut got: c_int = 0;
 
+			// `avcodec_decode_subtitle2` overwrites the rect array without releasing what is
+			// already there, so decoding twice into the same buffer would leak the first result.
+			// Freeing first also leaves `out` zeroed on the paths where the decoder produces
+			// nothing, rather than holding a stale subtitle.
+			avsubtitle_free(out.as_mut_ptr());
+
 			match avcodec_decode_subtitle2(self.as_mut_ptr(), out.as_mut_ptr(), &mut got, packet.as_ptr() as *mut _) {
 				e if e < 0 => Err(Error::from(e)),
 				_ => Ok(got != 0),
