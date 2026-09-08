@@ -1,6 +1,6 @@
 use std::{ffi::CString, ops::Deref};
 
-use libc::c_int;
+use libc::{c_int, c_void};
 
 use super::{Ass, Bitmap, Flags, Text, Type};
 use crate::ffi::*;
@@ -131,6 +131,8 @@ impl<'a> TextMut<'a> {
 		let value = CString::new(value).unwrap();
 
 		unsafe {
+			// Free the old string first; `set` may be called more than once.
+			av_freep(&mut (*self.as_mut_ptr()).text as *mut _ as *mut c_void);
 			(*self.as_mut_ptr()).text = av_strdup(value.as_ptr());
 		}
 	}
@@ -165,6 +167,8 @@ impl<'a> AssMut<'a> {
 		let value = CString::new(value).unwrap();
 
 		unsafe {
+			// Free the old string first; `set` may be called more than once.
+			av_freep(&mut (*self.as_mut_ptr()).ass as *mut _ as *mut c_void);
 			(*self.as_mut_ptr()).ass = av_strdup(value.as_ptr());
 		}
 	}

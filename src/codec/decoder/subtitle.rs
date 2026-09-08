@@ -12,6 +12,10 @@ impl Subtitle {
 		unsafe {
 			let mut got: c_int = 0;
 
+			// `avcodec_decode_subtitle2` memsets `out` without freeing it, so reusing the same
+			// `Subtitle` across decodes would leak the previous rects.
+			avsubtitle_free(out.as_mut_ptr());
+
 			match avcodec_decode_subtitle2(self.as_mut_ptr(), out.as_mut_ptr(), &mut got, packet.as_ptr() as *mut _) {
 				e if e < 0 => Err(Error::from(e)),
 				_ => Ok(got != 0),

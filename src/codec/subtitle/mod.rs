@@ -118,6 +118,20 @@ impl Default for Subtitle {
 	}
 }
 
+impl Drop for Subtitle {
+	/// Frees the rects and their `text` / `ass` / `data` allocations, which ffmpeg documents the
+	/// caller must do.
+	///
+	/// Sound because `Subtitle` solely owns its `AVSubtitle`: not `Clone` or `Copy`, private field,
+	/// and no method hands it out by value. `avsubtitle_free` zeroes the struct, so it is a no-op on
+	/// a zeroed or already-freed one.
+	fn drop(&mut self) {
+		unsafe {
+			avsubtitle_free(&mut self.0);
+		}
+	}
+}
+
 pub struct RectIter<'a> {
 	ptr: *const AVSubtitle,
 	cur: c_uint,
