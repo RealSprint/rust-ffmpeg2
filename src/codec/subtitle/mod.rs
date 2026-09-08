@@ -119,16 +119,12 @@ impl Default for Subtitle {
 }
 
 impl Drop for Subtitle {
-	/// Releases the rects and their `text` / `ass` / `data` allocations.
+	/// Frees the rects and their `text` / `ass` / `data` allocations, which ffmpeg documents the
+	/// caller must do.
 	///
-	/// `AVSubtitle` owns everything hanging off it, and ffmpeg documents that a decoded subtitle
-	/// "must be freed with avsubtitle_free". Nothing here did, so every rect leaked — both the ones
-	/// `avcodec_decode_subtitle2` fills in and the ones [`Subtitle::add_rect`] allocates.
-	///
-	/// This is sound because `Subtitle` is the sole owner of its `AVSubtitle`: it is neither `Clone`
-	/// nor `Copy`, its field is private, and no method hands out the `AVSubtitle` by value — only
-	/// borrows and raw pointers. `avsubtitle_free` is also a no-op on the zeroed value produced by
-	/// [`Subtitle::new`], and zeroes the struct afterwards, so it is safe to call more than once.
+	/// Sound because `Subtitle` solely owns its `AVSubtitle`: not `Clone` or `Copy`, private field,
+	/// and no method hands it out by value. `avsubtitle_free` zeroes the struct, so it is a no-op on
+	/// a zeroed or already-freed one.
 	fn drop(&mut self) {
 		unsafe {
 			avsubtitle_free(&mut self.0);
