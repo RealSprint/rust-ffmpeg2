@@ -6,6 +6,7 @@
 
 #[cfg(feature = "ffmpeg_7_0")]
 pub use crate::ffi::{
+	AV_LEVEL_UNKNOWN as FF_LEVEL_UNKNOWN,
 	AV_PROFILE_AAC_ELD as FF_PROFILE_AAC_ELD,
 	AV_PROFILE_AAC_HE as FF_PROFILE_AAC_HE,
 	AV_PROFILE_AAC_HE_V2 as FF_PROFILE_AAC_HE_V2,
@@ -85,6 +86,7 @@ pub use crate::ffi::{
 
 #[cfg(not(feature = "ffmpeg_7_0"))]
 pub use crate::ffi::{
+	FF_LEVEL_UNKNOWN,
 	FF_PROFILE_AAC_ELD,
 	FF_PROFILE_AAC_HE,
 	FF_PROFILE_AAC_HE_V2,
