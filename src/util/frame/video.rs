@@ -82,17 +82,42 @@ impl Video {
 
 	#[inline]
 	pub fn is_interlaced(&self) -> bool {
-		unsafe { (*self.as_ptr()).interlaced_frame != 0 }
+		// FFmpeg 7.0 moved this into AVFrame.flags.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			((*self.as_ptr()).flags & AV_FRAME_FLAG_INTERLACED) != 0
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).interlaced_frame != 0
+		}
 	}
 
 	#[inline]
 	pub fn is_top_first(&self) -> bool {
-		unsafe { (*self.as_ptr()).top_field_first != 0 }
+		// FFmpeg 7.0 moved this into AVFrame.flags.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			((*self.as_ptr()).flags & AV_FRAME_FLAG_TOP_FIELD_FIRST) != 0
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).top_field_first != 0
+		}
 	}
 
 	#[inline]
 	pub fn has_palette_changed(&self) -> bool {
-		unsafe { (*self.as_ptr()).palette_has_changed != 0 }
+		// FFmpeg 7.0 removed AVFrame.palette_has_changed with no replacement,
+		// so this can only report false there.
+		#[cfg(feature = "ffmpeg_7_0")]
+		{
+			false
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).palette_has_changed != 0
+		}
 	}
 
 	#[inline]
@@ -179,12 +204,28 @@ impl Video {
 
 	#[inline]
 	pub fn coded_number(&self) -> usize {
-		unsafe { (*self.as_ptr()).coded_picture_number as usize }
+		// FFmpeg 7.0 removed AVFrame.coded_picture_number with no replacement.
+		#[cfg(feature = "ffmpeg_7_0")]
+		{
+			0
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).coded_picture_number as usize
+		}
 	}
 
 	#[inline]
 	pub fn display_number(&self) -> usize {
-		unsafe { (*self.as_ptr()).display_picture_number as usize }
+		// FFmpeg 7.0 removed AVFrame.display_picture_number with no replacement.
+		#[cfg(feature = "ffmpeg_7_0")]
+		{
+			0
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).display_picture_number as usize
+		}
 	}
 
 	#[inline]

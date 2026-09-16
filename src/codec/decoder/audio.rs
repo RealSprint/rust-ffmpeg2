@@ -11,7 +11,15 @@ impl Audio {
 	}
 
 	pub fn channels(&self) -> u16 {
-		unsafe { (*self.as_ptr()).channels as u16 }
+		// FFmpeg 7.0 removed the legacy `channels` field; ch_layout is authoritative.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			(*self.as_ptr()).ch_layout.nb_channels as u16
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).channels as u16
+		}
 	}
 
 	pub fn format(&self) -> format::Sample {
@@ -25,7 +33,15 @@ impl Audio {
 	}
 
 	pub fn frames(&self) -> usize {
-		unsafe { (*self.as_ptr()).frame_number as usize }
+		// FFmpeg 7.0 removed AVCodecContext.frame_number in favour of frame_num.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			(*self.as_ptr()).frame_num as usize
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).frame_number as usize
+		}
 	}
 
 	pub fn align(&self) -> usize {

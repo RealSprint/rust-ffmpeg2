@@ -152,20 +152,31 @@ impl<'a> Iterator for SideDataIter<'a> {
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
 		unsafe {
-			if self.current >= (*self.stream.as_ptr()).nb_side_data {
+			#[cfg(feature = "ffmpeg_7_0")]
+			let nb_side_data = (*(*self.stream.as_ptr()).codecpar).nb_coded_side_data;
+			#[cfg(not(feature = "ffmpeg_7_0"))]
+			let nb_side_data = (*self.stream.as_ptr()).nb_side_data;
+
+			if self.current >= nb_side_data {
 				return None;
 			}
 
 			self.current += 1;
 
-			Some(packet::SideData::wrap(
-				(*self.stream.as_ptr()).side_data.offset((self.current - 1) as isize),
-			))
+			#[cfg(feature = "ffmpeg_7_0")]
+			let side_data = (*(*self.stream.as_ptr()).codecpar).coded_side_data;
+			#[cfg(not(feature = "ffmpeg_7_0"))]
+			let side_data = (*self.stream.as_ptr()).side_data;
+
+			Some(packet::SideData::wrap(side_data.offset((self.current - 1) as isize)))
 		}
 	}
 
 	fn size_hint(&self) -> (usize, Option<usize>) {
 		unsafe {
+			#[cfg(feature = "ffmpeg_7_0")]
+			let length = (*(*self.stream.as_ptr()).codecpar).nb_coded_side_data as usize;
+			#[cfg(not(feature = "ffmpeg_7_0"))]
 			let length = (*self.stream.as_ptr()).nb_side_data as usize;
 
 			(length - self.current as usize, Some(length - self.current as usize))
