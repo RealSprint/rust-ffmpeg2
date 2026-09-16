@@ -462,7 +462,7 @@ fn check_features(
         ));
     }
 
-    let version_check_info = [("avcodec", 56, 61, 0, 135)];
+    let version_check_info = [("avcodec", 56, 63, 0, 135)];
     for &(lib, begin_version_major, end_version_major, begin_version_minor, end_version_minor) in
         version_check_info.iter()
     {
@@ -605,6 +605,10 @@ fn check_features(
         ("ffmpeg_5_0", 59, 18),
         ("ffmpeg_5_1", 59, 37),
         ("ffmpeg_6_0", 60, 3),
+        ("ffmpeg_6_1", 60, 31),
+        ("ffmpeg_7_0", 61, 3),
+        ("ffmpeg_7_1", 61, 19),
+        ("ffmpeg_8_0", 62, 11),
     ];
     for &(ffmpeg_version_flag, lavc_version_major, lavc_version_minor) in
         ffmpeg_lavc_versions.iter()
@@ -1225,8 +1229,12 @@ fn thread_main() {
         builder = builder
             .header(search_include(&include_paths, "libavcodec/avcodec.h"))
             .header(search_include(&include_paths, "libavcodec/dv_profile.h"))
-            .header(search_include(&include_paths, "libavcodec/avfft.h"))
             .header(search_include(&include_paths, "libavcodec/vorbis_parser.h"));
+
+        // libavcodec/avfft.h was removed in FFmpeg 7.0.
+        if let Some(avfft_header) = maybe_search_include(&include_paths, "libavcodec/avfft.h") {
+            builder = builder.header(avfft_header);
+        }
     }
     
 	if let Some(bsf_header) = maybe_search_include(&include_paths, "libavcodec/bsf.h") {

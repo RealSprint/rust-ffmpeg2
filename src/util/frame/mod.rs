@@ -67,7 +67,15 @@ impl Frame {
 impl Frame {
 	#[inline]
 	pub fn is_key(&self) -> bool {
-		unsafe { (*self.as_ptr()).key_frame == 1 }
+		// FFmpeg 7.0 replaced AVFrame.key_frame with a bit in AVFrame.flags.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			((*self.as_ptr()).flags & AV_FRAME_FLAG_KEY) != 0
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).key_frame == 1
+		}
 	}
 
 	#[inline]
@@ -77,7 +85,22 @@ impl Frame {
 
 	#[inline]
 	pub fn packet(&self) -> Packet {
-		#[cfg(feature = "ffmpeg_3_2")]
+		// FFmpeg 7.0 renamed AVFrame.pkt_duration to duration, and removed
+		// pkt_pos and pkt_size with no replacement. -1 is the value FFmpeg
+		// itself used for an unknown position; size is reported as 0.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			Packet {
+				duration: (*self.as_ptr()).duration,
+				position: -1,
+				size: 0,
+
+				pts: (*self.as_ptr()).pts,
+				dts: (*self.as_ptr()).pkt_dts,
+			}
+		}
+
+		#[cfg(all(feature = "ffmpeg_3_2", not(feature = "ffmpeg_7_0")))]
 		unsafe {
 			Packet {
 				duration: (*self.as_ptr()).pkt_duration as i64,

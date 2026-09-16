@@ -221,6 +221,7 @@ pub enum Id {
 	AVRP,
 	V012,
 	AVUI,
+	#[cfg(not(feature = "ffmpeg_7_0"))]
 	AYUV,
 	TARGA_Y216,
 	V308,
@@ -732,6 +733,7 @@ impl From<AVCodecID> for Id {
 			AV_CODEC_ID_AVRP => Id::AVRP,
 			AV_CODEC_ID_012V => Id::V012,
 			AV_CODEC_ID_AVUI => Id::AVUI,
+			#[cfg(not(feature = "ffmpeg_7_0"))]
 			AV_CODEC_ID_AYUV => Id::AYUV,
 			AV_CODEC_ID_TARGA_Y216 => Id::TARGA_Y216,
 			AV_CODEC_ID_V308 => Id::V308,
@@ -1239,6 +1241,7 @@ impl Into<AVCodecID> for Id {
 			Id::AVRP => AV_CODEC_ID_AVRP,
 			Id::V012 => AV_CODEC_ID_012V,
 			Id::AVUI => AV_CODEC_ID_AVUI,
+			#[cfg(not(feature = "ffmpeg_7_0"))]
 			Id::AYUV => AV_CODEC_ID_AYUV,
 			Id::TARGA_Y216 => AV_CODEC_ID_TARGA_Y216,
 			Id::V308 => AV_CODEC_ID_V308,

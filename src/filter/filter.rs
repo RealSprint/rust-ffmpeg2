@@ -47,7 +47,14 @@ impl Filter {
 				None
 			}
 			else {
-				Some(PadIter::new(ptr, (*self.as_ptr()).nb_inputs as usize))
+				#[cfg(feature = "ffmpeg_7_0")]
+				{
+					Some(PadIter::new(ptr, avfilter_filter_pad_count(self.as_ptr(), 0) as usize))
+				}
+				#[cfg(not(feature = "ffmpeg_7_0"))]
+				{
+					Some(PadIter::new(ptr, (*self.as_ptr()).nb_inputs as usize))
+				}
 			}
 		}
 	}
@@ -60,7 +67,14 @@ impl Filter {
 				None
 			}
 			else {
-				Some(PadIter::new(ptr, (*self.as_ptr()).nb_outputs as usize))
+				#[cfg(feature = "ffmpeg_7_0")]
+				{
+					Some(PadIter::new(ptr, avfilter_filter_pad_count(self.as_ptr(), 1) as usize))
+				}
+				#[cfg(not(feature = "ffmpeg_7_0"))]
+				{
+					Some(PadIter::new(ptr, (*self.as_ptr()).nb_outputs as usize))
+				}
 			}
 		}
 	}

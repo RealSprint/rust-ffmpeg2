@@ -76,11 +76,25 @@ impl Audio {
 
 	#[inline]
 	pub fn channels(&self) -> u16 {
-		unsafe { (*self.as_ptr()).channels as u16 }
+		// FFmpeg 7.0 removed the legacy `channels` field; ch_layout is authoritative.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			(*self.as_ptr()).ch_layout.nb_channels as u16
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
+		unsafe {
+			(*self.as_ptr()).channels as u16
+		}
 	}
 
 	#[inline]
 	pub fn set_channels(&mut self, value: u16) {
+		// FFmpeg 7.0 removed the legacy `channels` field; ch_layout is authoritative.
+		#[cfg(feature = "ffmpeg_7_0")]
+		unsafe {
+			(*self.as_mut_ptr()).ch_layout.nb_channels = i32::from(value);
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
 		unsafe {
 			(*self.as_mut_ptr()).channels = i32::from(value);
 		}
