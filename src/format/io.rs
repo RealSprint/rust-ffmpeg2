@@ -78,7 +78,7 @@ unsafe extern "C" fn read_packet(opaque: *mut c_void, buf: *mut u8, size: c_int)
 
 	if buf.is_null() || size <= 0 {
 		Box::into_raw(proxy);
-		return AVERROR(EINVAL);
+		return AVERROR_EOF;
 	}
 
 	let buffer = slice::from_raw_parts_mut(buf, size as usize);
