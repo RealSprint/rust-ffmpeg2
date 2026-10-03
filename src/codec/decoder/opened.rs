@@ -94,6 +94,9 @@ impl Opened {
 
 impl Drop for Opened {
 	fn drop(&mut self) {
+		// FFmpeg 7.0 removed avcodec_close(); avcodec_free_context() on the
+		// owning Context already closes and frees the codec.
+		#[cfg(not(feature = "ffmpeg_7_0"))]
 		unsafe {
 			avcodec_close(self.as_mut_ptr());
 		}

@@ -180,8 +180,13 @@ impl Option {
 				| AV_OPT_TYPE_INT64
 				| AV_OPT_TYPE_UINT64
 				| AV_OPT_TYPE_CONST
-				| AV_OPT_TYPE_DURATION
-				| AV_OPT_TYPE_CHANNEL_LAYOUT => OptionType::Int(default.i64_),
+				| AV_OPT_TYPE_DURATION => OptionType::Int(default.i64_),
+				// AV_OPT_TYPE_UINT was added in FFmpeg 7.1.
+				#[cfg(feature = "ffmpeg_7_1")]
+				AV_OPT_TYPE_UINT => OptionType::Int(default.i64_),
+				// AV_OPT_TYPE_CHANNEL_LAYOUT was removed in FFmpeg 7.0.
+				#[cfg(not(feature = "ffmpeg_7_0"))]
+				AV_OPT_TYPE_CHANNEL_LAYOUT => OptionType::Int(default.i64_),
 				AV_OPT_TYPE_DOUBLE | AV_OPT_TYPE_FLOAT => OptionType::Double(default.dbl),
 				AV_OPT_TYPE_STRING
 				| AV_OPT_TYPE_IMAGE_SIZE
@@ -190,6 +195,16 @@ impl Option {
 				| AV_OPT_TYPE_VIDEO_RATE
 				| AV_OPT_TYPE_COLOR
 				| AV_OPT_TYPE_CHLAYOUT => {
+					if default.str_.is_null() {
+						return OptionType::String(None);
+					}
+
+					OptionType::String(CStr::from_ptr(default.str_).to_str().ok().map(Cow::from))
+				}
+				// AV_OPT_TYPE_FLAG_ARRAY was added in FFmpeg 7.0; its default is
+				// carried in the string member of the union.
+				#[cfg(feature = "ffmpeg_7_0")]
+				AV_OPT_TYPE_FLAG_ARRAY => {
 					if default.str_.is_null() {
 						return OptionType::String(None);
 					}

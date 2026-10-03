@@ -134,7 +134,18 @@ unsafe extern "C" fn seek(opaque: *mut c_void, offset: i64, whence: c_int) -> i6
 	result
 }
 
+// FFmpeg 7.0 changed the avio write callback's buffer to const.
+#[cfg(feature = "ffmpeg_7_0")]
+unsafe extern "C" fn write_packet(opaque: *mut c_void, buf: *const u8, size: c_int) -> c_int {
+	write_packet_impl(opaque, buf, size)
+}
+
+#[cfg(not(feature = "ffmpeg_7_0"))]
 unsafe extern "C" fn write_packet(opaque: *mut c_void, buf: *mut u8, size: c_int) -> c_int {
+	write_packet_impl(opaque, buf, size)
+}
+
+unsafe fn write_packet_impl(opaque: *mut c_void, buf: *const u8, size: c_int) -> c_int {
 	let mut proxy = Box::<Proxy>::from_raw(opaque.cast());
 
 	if buf.is_null() || size <= 0 {
