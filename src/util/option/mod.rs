@@ -64,8 +64,17 @@ impl From<AVOptionType> for Type {
 			AV_OPT_TYPE_VIDEO_RATE => Type::VideoRate,
 			AV_OPT_TYPE_DURATION => Type::Duration,
 			AV_OPT_TYPE_COLOR => Type::Color,
+			// AV_OPT_TYPE_CHANNEL_LAYOUT was removed in FFmpeg 7.0.
+			#[cfg(not(feature = "ffmpeg_7_0"))]
 			AV_OPT_TYPE_CHANNEL_LAYOUT => Type::ChannelLayout,
 			AV_OPT_TYPE_CHLAYOUT => Type::ChannelLayout,
+			// AV_OPT_TYPE_UINT was added in FFmpeg 7.1; av_opt_get_int reads it.
+			#[cfg(feature = "ffmpeg_7_1")]
+			AV_OPT_TYPE_UINT => Type::Int,
+			// AV_OPT_TYPE_FLAG_ARRAY (FFmpeg 7.0) only marks another type as an
+			// array, which FFmpeg reads and writes whole as a string.
+			#[cfg(feature = "ffmpeg_7_0")]
+			AV_OPT_TYPE_FLAG_ARRAY => Type::String,
 		}
 	}
 }
@@ -136,6 +145,25 @@ impl Option {
 	}
 }
 
+/// The option's type, or `None` for an array option.
+///
+/// FFmpeg 7.0 ORs `AV_OPT_TYPE_FLAG_ARRAY` into the element type of an array
+/// option, a value no `AVOptionType` variant has. `type_` is therefore read as
+/// an integer, and neither it nor the whole `AVOption` is read as the enum until
+/// that bit is ruled out.
+unsafe fn scalar_type(option: *const AVOption) -> std::option::Option<AVOptionType> {
+	const _: () = assert!(std::mem::size_of::<AVOptionType>() == std::mem::size_of::<u32>());
+
+	let raw = ptr::addr_of!((*option).type_).cast::<u32>().read();
+
+	#[cfg(feature = "ffmpeg_7_0")]
+	if raw & AV_OPT_TYPE_FLAG_ARRAY as u32 != 0 {
+		return None;
+	}
+
+	Some(std::mem::transmute::<u32, AVOptionType>(raw))
+}
+
 impl Option {
 	pub fn name(&self) -> &str {
 		unsafe { CStr::from_ptr((*self.option).name).to_str().unwrap() }
@@ -158,15 +186,20 @@ impl Option {
 	}
 
 	pub fn kind(&self) -> Type {
-		unsafe { (*self.option).type_.into() }
+		// FFmpeg reads and writes an array option whole as a string.
+		unsafe { scalar_type(self.option) }.map_or(Type::String, Type::from)
+	}
+
+	/// Whether this is an array option (FFmpeg 7.0+). Its `kind()` is
+	/// `Type::String`, the form `av_opt_get` and `av_opt_set` use for the whole
+	/// array.
+	pub fn is_array(&self) -> bool {
+		unsafe { scalar_type(self.option) }.is_none()
 	}
 
 	pub fn constants(&self) -> impl Iterator<Item = OptionConstant> + '_ {
 		AVOptionIterator::from_option(self.obj, self.option, self.flags)
-			.take_while(|option| {
-				let option = *option;
-				(unsafe { *option }).type_ == AV_OPT_TYPE_CONST
-			})
+			.take_while(|option| unsafe { scalar_type(*option) } == Some(AV_OPT_TYPE_CONST))
 			.map(|option| OptionConstant(Option::new(self.obj, option, self.flags)))
 	}
 
@@ -174,7 +207,11 @@ impl Option {
 		unsafe {
 			let default = (*self.option).default_val;
 
-			match ({ *self.option }).type_ {
+			let Some(kind) = scalar_type(self.option) else {
+				return array_default(self.option);
+			};
+
+			match kind {
 				AV_OPT_TYPE_FLAGS => OptionType::Int(default.i64_),
 				AV_OPT_TYPE_INT
 				| AV_OPT_TYPE_INT64
@@ -201,16 +238,8 @@ impl Option {
 
 					OptionType::String(CStr::from_ptr(default.str_).to_str().ok().map(Cow::from))
 				}
-				// AV_OPT_TYPE_FLAG_ARRAY was added in FFmpeg 7.0; its default is
-				// carried in the string member of the union.
 				#[cfg(feature = "ffmpeg_7_0")]
-				AV_OPT_TYPE_FLAG_ARRAY => {
-					if default.str_.is_null() {
-						return OptionType::String(None);
-					}
-
-					OptionType::String(CStr::from_ptr(default.str_).to_str().ok().map(Cow::from))
-				}
+				AV_OPT_TYPE_FLAG_ARRAY => unreachable!("scalar_type() returns None for array options"),
 				AV_OPT_TYPE_BOOL => OptionType::Bool(default.i64_ > 0),
 				AV_OPT_TYPE_RATIONAL => OptionType::Rational(default.dbl.into()),
 				AV_OPT_TYPE_PIXEL_FMT => OptionType::Pixel(std::mem::transmute::<_, AVPixelFormat>(default.i64_ as i32).into()),
@@ -220,6 +249,23 @@ impl Option {
 			}
 		}
 	}
+}
+
+/// An array option's default: the string `av_opt_set` would parse, held by the
+/// `AVOptionArrayDef` the union points to.
+#[cfg(feature = "ffmpeg_7_0")]
+unsafe fn array_default(option: *const AVOption) -> OptionType {
+	let def = (*option).default_val.arr;
+	if def.is_null() || (*def).def.is_null() {
+		return OptionType::String(None);
+	}
+
+	OptionType::String(CStr::from_ptr((*def).def).to_str().ok().map(Cow::from))
+}
+
+#[cfg(not(feature = "ffmpeg_7_0"))]
+unsafe fn array_default(_: *const AVOption) -> OptionType {
+	unreachable!("array options were added in FFmpeg 7.0")
 }
 
 pub struct OptionIter {
@@ -243,7 +289,7 @@ impl Iterator for OptionIter {
 				return None;
 			};
 
-			if (unsafe { *next }).type_ == AV_OPT_TYPE_CONST {
+			if unsafe { scalar_type(next) } == Some(AV_OPT_TYPE_CONST) {
 				continue;
 			}
 
@@ -335,5 +381,33 @@ pub unsafe fn get_option(ptr: *mut c_void, option: &crate::option::Option) -> st
 
 			Some(OptionType::Bool(value > 0))
 		}
+	}
+}
+
+#[cfg(all(test, feature = "codec", feature = "ffmpeg_7_0"))]
+mod tests {
+	use super::{OptionIter, OptionType, Type};
+	use crate::ffi::{avcodec_get_class, AV_OPT_FLAG_DECODING_PARAM};
+
+	fn codec_context_option(name: &str) -> super::Option {
+		OptionIter::new(unsafe { avcodec_get_class() }.cast(), AV_OPT_FLAG_DECODING_PARAM)
+			.find(|option| option.name() == name)
+			.unwrap()
+	}
+
+	#[test]
+	fn array_option_reads_as_a_string() {
+		// AV_OPT_TYPE_INT | AV_OPT_TYPE_FLAG_ARRAY on every AVCodecContext since 7.0.
+		let option = codec_context_option("side_data_prefer_packet");
+		assert!(option.is_array());
+		assert_eq!(option.kind(), Type::String);
+		assert!(matches!(option.default_value(), OptionType::String(_)));
+	}
+
+	#[test]
+	fn scalar_option_keeps_its_type() {
+		let option = codec_context_option("threads");
+		assert!(!option.is_array());
+		assert_eq!(option.kind(), Type::Int);
 	}
 }
