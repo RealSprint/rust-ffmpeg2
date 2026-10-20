@@ -1,10 +1,12 @@
 //! Compatibility shims for FFmpeg API renames.
 //!
 //! FFmpeg 7.0 renamed the codec profile constants from `FF_PROFILE_*` to
-//! `AV_PROFILE_*` (the old names were removed, not deprecated). Re-export them
-//! under the historical names so call sites stay version-agnostic.
+//! `AV_PROFILE_*` and kept the old names as deprecated aliases, which 8.0
+//! removed. Re-export them under the historical names so call sites stay
+//! version-agnostic. Before 8.0 the re-export is FFmpeg's own constant, so a
+//! glob import of both this module and `ffi` is not ambiguous.
 
-#[cfg(feature = "ffmpeg_7_0")]
+#[cfg(all(feature = "codec", feature = "ffmpeg_8_0"))]
 pub use crate::ffi::{
 	AV_LEVEL_UNKNOWN as FF_LEVEL_UNKNOWN,
 	AV_PROFILE_AAC_ELD as FF_PROFILE_AAC_ELD,
@@ -84,7 +86,7 @@ pub use crate::ffi::{
 	AV_PROFILE_VP9_3 as FF_PROFILE_VP9_3,
 };
 
-#[cfg(not(feature = "ffmpeg_7_0"))]
+#[cfg(all(feature = "codec", not(feature = "ffmpeg_8_0")))]
 pub use crate::ffi::{
 	FF_LEVEL_UNKNOWN,
 	FF_PROFILE_AAC_ELD,
@@ -164,11 +166,10 @@ pub use crate::ffi::{
 	FF_PROFILE_VP9_3,
 };
 
-
 /// FFmpeg 8.0 turned the `SWS_*` scaler flags into an `enum SwsFlags`, so bindgen
 /// emits them as enum variants rather than bare integer constants. Re-expose them
 /// as `c_int` constants under the historical names.
-#[cfg(feature = "ffmpeg_8_0")]
+#[cfg(all(feature = "software-scaling", feature = "ffmpeg_8_0"))]
 mod sws_flags {
 	use libc::c_int;
 
@@ -192,10 +193,10 @@ mod sws_flags {
 	pub const SWS_ERROR_DIFFUSION: c_int = crate::ffi::SwsFlags::SWS_ERROR_DIFFUSION as c_int;
 }
 
-#[cfg(feature = "ffmpeg_8_0")]
+#[cfg(all(feature = "software-scaling", feature = "ffmpeg_8_0"))]
 pub use sws_flags::*;
 
-#[cfg(not(feature = "ffmpeg_8_0"))]
+#[cfg(all(feature = "software-scaling", not(feature = "ffmpeg_8_0")))]
 pub use crate::ffi::{
 	SWS_FAST_BILINEAR,
 	SWS_BILINEAR,

@@ -9,8 +9,8 @@ extern crate image;
 
 pub use crate::sys as ffi;
 
-#[macro_use]
 pub mod compat;
+#[macro_use]
 pub mod util;
 pub use crate::util::{
 	channel_layout::{self, Channel, ChannelLayout},
