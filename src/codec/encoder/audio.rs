@@ -106,7 +106,7 @@ impl Audio {
 		// FFmpeg 7.0 removed the legacy `channels` field; ch_layout is authoritative.
 		#[cfg(feature = "ffmpeg_7_0")]
 		unsafe {
-			(*self.as_mut_ptr()).ch_layout.nb_channels = value;
+			crate::util::frame::audio::set_layout_channels(&mut (*self.as_mut_ptr()).ch_layout, value);
 		}
 		#[cfg(not(feature = "ffmpeg_7_0"))]
 		unsafe {

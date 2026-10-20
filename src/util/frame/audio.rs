@@ -92,7 +92,7 @@ impl Audio {
 		// FFmpeg 7.0 removed the legacy `channels` field; ch_layout is authoritative.
 		#[cfg(feature = "ffmpeg_7_0")]
 		unsafe {
-			(*self.as_mut_ptr()).ch_layout.nb_channels = i32::from(value);
+			set_layout_channels(&mut (*self.as_mut_ptr()).ch_layout, i32::from(value));
 		}
 		#[cfg(not(feature = "ffmpeg_7_0"))]
 		unsafe {
@@ -503,5 +503,54 @@ unsafe impl Sample for (f64, f64, f64, f64, f64, f64, f64) {
 	#[inline(always)]
 	fn is_valid(format: format::Sample, channels: u16) -> bool {
 		channels == 7 && format == format::Sample::F64(format::sample::Type::Packed)
+	}
+}
+
+/// Gives `layout` `channels` channels. A layout that already has that many is
+/// kept; any other is replaced by FFmpeg's default layout for the count. Only
+/// changing `nb_channels` would leave a native mask that disagrees with it, or a
+/// custom map shorter than it, which readers of the map then overrun.
+#[cfg(feature = "ffmpeg_7_0")]
+pub(crate) unsafe fn set_layout_channels(layout: *mut AVChannelLayout, channels: c_int) {
+	if (*layout).nb_channels == channels {
+		return;
+	}
+
+	av_channel_layout_uninit(layout);
+	av_channel_layout_default(layout, channels);
+}
+
+#[cfg(all(test, feature = "ffmpeg_7_0"))]
+mod tests {
+	use super::Audio;
+	use crate::{channel_layout::CustomChannel, Channel, ChannelLayout};
+
+	#[test]
+	fn set_channels_keeps_a_layout_with_that_count() {
+		let mut frame = Audio::empty();
+		frame.set_channel_layout(ChannelLayout::STEREO);
+		frame.set_channels(2);
+		assert_eq!(frame.channel_layout(), ChannelLayout::STEREO);
+	}
+
+	#[test]
+	fn set_channels_replaces_a_native_layout_with_another_count() {
+		let mut frame = Audio::empty();
+		frame.set_channel_layout(ChannelLayout::STEREO);
+		frame.set_channels(1);
+		assert!(frame.channel_layout().is_valid());
+		assert_eq!(frame.channel_layout(), ChannelLayout::MONO);
+	}
+
+	#[test]
+	fn set_channels_replaces_a_custom_layout_with_another_count() {
+		let channels = [CustomChannel::from(Channel::FrontLeft), CustomChannel::from(Channel::FrontRight)];
+		let mut frame = Audio::empty();
+		frame.set_channel_layout(ChannelLayout::custom(&channels));
+		frame.set_channels(3);
+		let layout = frame.channel_layout();
+		assert!(layout.is_valid());
+		assert_eq!(layout.channels(), 3);
+		assert_eq!(layout.custom_channels(), None);
 	}
 }
