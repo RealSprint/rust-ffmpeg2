@@ -7,6 +7,7 @@ use std::{
 use libc::c_int;
 
 use super::Id;
+use crate::compat::*;
 use crate::ffi::*;
 
 #[allow(non_camel_case_types)]

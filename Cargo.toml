@@ -104,6 +104,10 @@ ffmpeg_4_4 = ["ffmpeg_4_3"]
 ffmpeg_5_0 = ["ffmpeg_4_4"]
 ffmpeg_5_1 = ["ffmpeg_5_0"]
 ffmpeg_6_0 = ["ffmpeg_5_1"]
+ffmpeg_6_1 = ["ffmpeg_6_0"]
+ffmpeg_7_0 = ["ffmpeg_6_1"]
+ffmpeg_7_1 = ["ffmpeg_7_0"]
+ffmpeg_8_0 = ["ffmpeg_7_1"]
 
 [dependencies]
 libc      = "0.2"

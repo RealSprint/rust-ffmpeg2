@@ -9,6 +9,7 @@ extern crate image;
 
 pub use crate::sys as ffi;
 
+pub mod compat;
 #[macro_use]
 pub mod util;
 pub use crate::util::{

@@ -54,6 +54,12 @@ impl Video {
 	}
 
 	pub fn set_slice_count(&mut self, value: usize) {
+		// FFmpeg 7.0 removed AVCodecContext.slice_count with no replacement.
+		#[cfg(feature = "ffmpeg_7_0")]
+		{
+			let _ = value;
+		}
+		#[cfg(not(feature = "ffmpeg_7_0"))]
 		unsafe {
 			(*self.as_mut_ptr()).slice_count = value as c_int;
 		}

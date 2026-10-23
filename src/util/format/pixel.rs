@@ -233,7 +233,7 @@ pub enum Pixel {
 	VIDEOTOOLBOX,
 
 	// --- defaults
-	#[cfg(not(feature = "ff_api_xvmc"))]
+	#[cfg(all(not(feature = "ff_api_xvmc"), not(feature = "ffmpeg_7_0")))]
 	XVMC,
 
 	RGB32,
@@ -590,7 +590,7 @@ impl From<AVPixelFormat> for Pixel {
 
 			AV_PIX_FMT_VIDEOTOOLBOX => Pixel::VIDEOTOOLBOX,
 
-			#[cfg(not(feature = "ff_api_xvmc"))]
+			#[cfg(all(not(feature = "ff_api_xvmc"), not(feature = "ffmpeg_7_0")))]
 			AV_PIX_FMT_XVMC => Pixel::XVMC,
 
 			AV_PIX_FMT_P010LE => Pixel::P010LE,
@@ -849,7 +849,7 @@ impl From<Pixel> for AVPixelFormat {
 			Pixel::VIDEOTOOLBOX => AV_PIX_FMT_VIDEOTOOLBOX,
 
 			// --- defaults
-			#[cfg(not(feature = "ff_api_xvmc"))]
+			#[cfg(all(not(feature = "ff_api_xvmc"), not(feature = "ffmpeg_7_0")))]
 			Pixel::XVMC => AV_PIX_FMT_XVMC,
 
 			Pixel::RGB32 => AV_PIX_FMT_RGB32,

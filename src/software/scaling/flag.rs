@@ -1,5 +1,6 @@
 use libc::c_int;
 
+use crate::compat::*;
 use crate::ffi::*;
 
 bitflags! {
