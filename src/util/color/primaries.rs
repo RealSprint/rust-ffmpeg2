@@ -23,6 +23,8 @@ pub enum Primaries {
 	SMPTE432,
 	#[cfg(feature = "ffmpeg_4_3")]
 	EBU3213,
+	#[cfg(feature = "ffmpeg_8_1")]
+	VGamut,
 }
 
 impl Primaries {
@@ -60,6 +62,10 @@ impl From<AVColorPrimaries> for Primaries {
 			AVCOL_PRI_SMPTE432 => Primaries::SMPTE432,
 			#[cfg(feature = "ffmpeg_4_3")]
 			AVCOL_PRI_EBU3213 => Primaries::EBU3213,
+			#[cfg(feature = "ffmpeg_8_1")]
+			AVColorPrimaries::AVCOL_PRI_V_GAMUT => Primaries::VGamut,
+			#[cfg(feature = "ffmpeg_8_1")]
+			AVCOL_PRI_EXT_NB => Primaries::Reserved0,
 			#[cfg(not(feature = "ffmpeg_4_3"))]
 			_ => unimplemented!(),
 		}
@@ -86,6 +92,8 @@ impl Into<AVColorPrimaries> for Primaries {
 			Primaries::SMPTE432 => AVCOL_PRI_SMPTE432,
 			#[cfg(feature = "ffmpeg_4_3")]
 			Primaries::EBU3213 => AVCOL_PRI_EBU3213,
+			#[cfg(feature = "ffmpeg_8_1")]
+			Primaries::VGamut => AVColorPrimaries::AVCOL_PRI_V_GAMUT,
 		}
 	}
 }
