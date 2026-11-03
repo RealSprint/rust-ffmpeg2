@@ -25,6 +25,8 @@ pub enum TransferCharacteristic {
 	SMPTE2084,
 	SMPTE428,
 	ARIB_STD_B67,
+	#[cfg(feature = "ffmpeg_8_1")]
+	VLog,
 }
 
 impl TransferCharacteristic {
@@ -64,6 +66,10 @@ impl From<AVColorTransferCharacteristic> for TransferCharacteristic {
 			AVCOL_TRC_SMPTE2084 => TransferCharacteristic::SMPTE2084,
 			AVCOL_TRC_SMPTE428 => TransferCharacteristic::SMPTE428,
 			AVCOL_TRC_ARIB_STD_B67 => TransferCharacteristic::ARIB_STD_B67,
+			#[cfg(feature = "ffmpeg_8_1")]
+			AVColorTransferCharacteristic::AVCOL_TRC_V_LOG => TransferCharacteristic::VLog,
+			#[cfg(feature = "ffmpeg_8_1")]
+			AVCOL_TRC_EXT_NB => TransferCharacteristic::Reserved0,
 		}
 	}
 }
@@ -90,6 +96,8 @@ impl Into<AVColorTransferCharacteristic> for TransferCharacteristic {
 			TransferCharacteristic::SMPTE2084 => AVCOL_TRC_SMPTE2084,
 			TransferCharacteristic::SMPTE428 => AVCOL_TRC_SMPTE428,
 			TransferCharacteristic::ARIB_STD_B67 => AVCOL_TRC_ARIB_STD_B67,
+			#[cfg(feature = "ffmpeg_8_1")]
+			TransferCharacteristic::VLog => AVColorTransferCharacteristic::AVCOL_TRC_V_LOG,
 		}
 	}
 }
